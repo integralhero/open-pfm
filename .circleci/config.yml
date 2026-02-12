@@ -1,0 +1,28 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@4.0.0
+
+jobs:
+  test:
+    executor:
+      name: python/default
+      tag: "3.13"
+    steps:
+      - checkout
+      - run:
+          name: Install uv
+          command: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - run:
+          name: Install dependencies
+          command: uv sync --frozen
+      - run:
+          name: Run tests
+          command: uv run pytest tests/ -v --junitxml=test-results/junit.xml
+      - store_test_results:
+          path: test-results
+
+workflows:
+  test:
+    jobs:
+      - test
