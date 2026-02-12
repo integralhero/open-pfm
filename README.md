@@ -135,11 +135,34 @@ The server is available at `http://localhost:8000/sse`.
 
 The included `Dockerfile` and `railway.toml` work out of the box with Railway. For other platforms, any Docker host that runs the Dockerfile will work.
 
-4. Connect via MCPPorter with your bearer token:
+#### Connect your agent via MCPPorter
+
+Add the server to your MCPPorter config (usually `~/.openclaw/workspace-<agent>/config/mcporter.json`):
+
+```json
+{
+  "mcpServers": {
+    "pfm": {
+      "baseUrl": "https://your-host.up.railway.app/mcp/",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    }
+  }
+}
+```
+
+Or via the CLI:
 
 ```bash
 mcporter config add pfm https://your-host.up.railway.app/mcp/ \
   --header "Authorization: Bearer YOUR_TOKEN"
+```
+
+Verify the connection:
+
+```bash
+mcporter call pfm.fetch_assets
 ```
 
 ## Environment variables
