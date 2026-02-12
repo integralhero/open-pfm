@@ -10,8 +10,7 @@ services:
       - MCP_HOST=0.0.0.0
       - MCP_PORT=8000
       # Auth: set GOOGLE_SERVICE_ACCOUNT_JSON_B64 in .env for remote,
-      # or mount a key file with the volumes below for local Docker
-      - GOOGLE_SERVICE_ACCOUNT_FILE=/app/secrets/service-account.json
+      # or mount a service account key with the volume below for local Docker
     volumes:
-      - ./secrets:/app/secrets:ro  # only needed if using file-based auth
+      - ./secrets/service-account.json:/app/credentials.json:ro  # only needed if using file-based auth
     restart: unless-stopped

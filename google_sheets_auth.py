@@ -19,18 +19,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # launched by Claude Desktop or other MCP hosts).
 load_dotenv(os.path.join(SCRIPT_DIR, '.env'))
 
-
-def _resolve_path(env_value: str, default_name: str) -> str:
-    """Return an absolute path, resolving relative paths against SCRIPT_DIR."""
-    path = env_value or default_name
-    if not os.path.isabs(path):
-        return os.path.join(SCRIPT_DIR, path)
-    return path
-
-
-CREDENTIALS_FILE = _resolve_path(os.getenv('GOOGLE_CREDENTIALS_FILE', ''), 'credentials.json')
-TOKEN_FILE = _resolve_path(os.getenv('GOOGLE_TOKEN_FILE', ''), 'token.json')
-SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_SERVICE_ACCOUNT_FILE', '')
+CREDENTIALS_FILE = os.path.join(SCRIPT_DIR, 'credentials.json')
+TOKEN_FILE = os.path.join(SCRIPT_DIR, 'token.json')
 SERVICE_ACCOUNT_JSON_B64 = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON_B64', '')
 
 
@@ -49,8 +39,8 @@ def create_sheets_service():
 
     Tries authentication strategies in order:
     1. Base64-encoded service account JSON (GOOGLE_SERVICE_ACCOUNT_JSON_B64)
-    2. Service account file path (GOOGLE_SERVICE_ACCOUNT_FILE)
-    3. OAuth user credentials (token.json / credentials.json)
+    2. credentials.json — auto-detected as service account key or OAuth client secrets
+    3. Cached OAuth token (token.json)
     """
     creds = None
 
@@ -58,10 +48,6 @@ def create_sheets_service():
         info = json.loads(base64.b64decode(SERVICE_ACCOUNT_JSON_B64))
         creds = service_account.Credentials.from_service_account_info(
             info, scopes=SCOPES
-        )
-    elif SERVICE_ACCOUNT_FILE and os.path.exists(SERVICE_ACCOUNT_FILE):
-        creds = service_account.Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE, scopes=SCOPES
         )
     else:
         # CREDENTIALS_FILE may be either a service-account key or an OAuth
@@ -85,8 +71,8 @@ def create_sheets_service():
             else:
                 if not os.path.exists(CREDENTIALS_FILE):
                     raise FileNotFoundError(
-                        f"No credentials found. Provide GOOGLE_SERVICE_ACCOUNT_FILE "
-                        f"for headless use, or '{CREDENTIALS_FILE}' for OAuth flow."
+                        f"No credentials found. Place a service account key or "
+                        f"OAuth client secrets file at '{CREDENTIALS_FILE}'."
                     )
                 flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
                 # run_local_server needs a browser.  When running headless

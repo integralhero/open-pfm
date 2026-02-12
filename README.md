@@ -134,12 +134,11 @@ The included `Dockerfile` and `railway.toml` work out of the box with Railway. F
 |---|---|---|---|
 | `GOOGLE_SPREADSHEET_ID` | Yes | - | Your Google Spreadsheet ID (from the URL) |
 | `GOOGLE_SERVICE_ACCOUNT_JSON_B64` | No | `""` | Base64-encoded service account JSON (for cloud/Docker) |
-| `GOOGLE_SERVICE_ACCOUNT_FILE` | No | `""` | Path to service account key file (for local Docker) |
-| `GOOGLE_CREDENTIALS_FILE` | No | `credentials.json` | Path to OAuth client credentials (for local dev) |
-| `GOOGLE_TOKEN_FILE` | No | `token.json` | Path to cached OAuth token (for local dev) |
 | `MCP_TRANSPORT` | No | `stdio` | `stdio` for local, `sse` for remote/Docker |
 | `MCP_HOST` | No | `0.0.0.0` | Host to bind (remote mode) |
 | `MCP_PORT` | No | `8000` | Port to bind (remote mode) |
+
+For local auth, place your credentials file (OAuth client secrets **or** service account key) as `credentials.json` in the project root. No env var needed.
 
 ## Running tests
 

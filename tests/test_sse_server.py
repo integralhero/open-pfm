@@ -33,7 +33,6 @@ class TestHTTPServer:
         env["MCP_HOST"] = "127.0.0.1"
         # No credentials — server should still start (auth is lazy)
         env["GOOGLE_SERVICE_ACCOUNT_JSON_B64"] = ""
-        env["GOOGLE_SERVICE_ACCOUNT_FILE"] = ""
 
         proc = subprocess.Popen(
             [sys.executable, "server.py"],
@@ -70,7 +69,6 @@ class TestHTTPServer:
         env["MCP_PORT"] = str(port)
         env["MCP_HOST"] = "127.0.0.1"
         env["GOOGLE_SERVICE_ACCOUNT_JSON_B64"] = ""
-        env["GOOGLE_SERVICE_ACCOUNT_FILE"] = ""
 
         proc = subprocess.Popen(
             [sys.executable, "server.py"],
@@ -92,7 +90,6 @@ class TestHTTPServer:
         env["MCP_PORT"] = str(port)
         env["MCP_HOST"] = "127.0.0.1"
         env["GOOGLE_SERVICE_ACCOUNT_JSON_B64"] = ""
-        env["GOOGLE_SERVICE_ACCOUNT_FILE"] = ""
 
         proc = subprocess.Popen(
             [sys.executable, "server.py"],
