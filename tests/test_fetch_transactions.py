@@ -61,7 +61,7 @@ class TestFetchTransactionsMethod:
         assert len(results) == 3
         assert results[0].date == date(2025, 1, 15)
         assert results[0].name == "Coffee Shop"
-        assert results[0].amount == 5.50
+        assert results[0].amount == 999.99  # intentionally wrong to test CI
         assert results[0].description == "Morning coffee"
         assert results[0].category == "Food"
 
