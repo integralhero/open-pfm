@@ -22,7 +22,25 @@ jobs:
       - store_test_results:
           path: test-results
 
+  deploy:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+      - run:
+          name: Install Railway CLI
+          command: curl -fsSL https://railway.com/install.sh | sh
+      - run:
+          name: Deploy to Railway
+          command: railway up --service "$RAILWAY_SERVICE_ID" --detach
+
 workflows:
-  test:
+  test-and-deploy:
     jobs:
       - test
+      - deploy:
+          requires:
+            - test
+          filters:
+            branches:
+              only: main
