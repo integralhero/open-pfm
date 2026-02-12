@@ -40,7 +40,6 @@ class TestBase64Auth:
 
     @patch.dict(os.environ, {
         "GOOGLE_SERVICE_ACCOUNT_JSON_B64": FAKE_SA_B64,
-        "GOOGLE_SERVICE_ACCOUNT_FILE": "",
     })
     @patch("google.oauth2.service_account.Credentials.from_service_account_info")
     @patch("googleapiclient.discovery.build")
@@ -59,7 +58,6 @@ class TestBase64Auth:
 
     @patch.dict(os.environ, {
         "GOOGLE_SERVICE_ACCOUNT_JSON_B64": FAKE_SA_B64,
-        "GOOGLE_SERVICE_ACCOUNT_FILE": "",
     })
     @patch("google.oauth2.service_account.Credentials.from_service_account_info")
     @patch("google.oauth2.service_account.Credentials.from_service_account_file")
@@ -75,35 +73,34 @@ class TestBase64Auth:
         mock_from_file.assert_not_called()
 
 
-class TestFileAuth:
-    """Test auth via GOOGLE_SERVICE_ACCOUNT_FILE."""
+class TestAutoDetectCredentials:
+    """Test auto-detection of credentials.json as service account vs OAuth."""
 
-    def test_uses_file_when_set(self, tmp_path):
-        sa_file = tmp_path / "sa.json"
-        sa_file.write_text(json.dumps(FAKE_SA_INFO))
+    def test_autodetects_service_account_key(self, tmp_path):
+        creds_file = tmp_path / "credentials.json"
+        creds_file.write_text(json.dumps(FAKE_SA_INFO))
 
-        with patch.dict(os.environ, {
-            "GOOGLE_SERVICE_ACCOUNT_JSON_B64": "",
-            "GOOGLE_SERVICE_ACCOUNT_FILE": str(sa_file),
-        }), \
+        with patch.dict(os.environ, {"GOOGLE_SERVICE_ACCOUNT_JSON_B64": ""}), \
             patch("google.oauth2.service_account.Credentials.from_service_account_file") as mock_from_file, \
             patch("googleapiclient.discovery.build"):
             mock_from_file.return_value = MagicMock()
 
             from google_sheets_auth import create_sheets_service
+            import google_sheets_auth
+            google_sheets_auth.CREDENTIALS_FILE = str(creds_file)
+
             create_sheets_service()
 
             mock_from_file.assert_called_once()
-            assert mock_from_file.call_args[0][0] == str(sa_file)
+            assert mock_from_file.call_args[0][0] == str(creds_file)
 
-    def test_skips_file_when_path_missing(self):
-        with patch.dict(os.environ, {
-            "GOOGLE_SERVICE_ACCOUNT_JSON_B64": "",
-            "GOOGLE_SERVICE_ACCOUNT_FILE": "/nonexistent/sa.json",
-            "GOOGLE_CREDENTIALS_FILE": "/also/nonexistent/creds.json",
-            "GOOGLE_TOKEN_FILE": "/also/nonexistent/token.json",
-        }):
+    def test_falls_through_when_no_credentials_file(self):
+        with patch.dict(os.environ, {"GOOGLE_SERVICE_ACCOUNT_JSON_B64": ""}):
             from google_sheets_auth import create_sheets_service
+            import google_sheets_auth
+            google_sheets_auth.CREDENTIALS_FILE = "/nonexistent/credentials.json"
+            google_sheets_auth.TOKEN_FILE = "/nonexistent/token.json"
+
             with pytest.raises(FileNotFoundError, match="No credentials found"):
                 create_sheets_service()
 
@@ -121,12 +118,7 @@ class TestOAuthFallback:
         }
         token_file.write_text(json.dumps(token_data))
 
-        with patch.dict(os.environ, {
-            "GOOGLE_SERVICE_ACCOUNT_JSON_B64": "",
-            "GOOGLE_SERVICE_ACCOUNT_FILE": "",
-            "GOOGLE_TOKEN_FILE": str(token_file),
-            "GOOGLE_CREDENTIALS_FILE": "/nonexistent/creds.json",
-        }), \
+        with patch.dict(os.environ, {"GOOGLE_SERVICE_ACCOUNT_JSON_B64": ""}), \
             patch("google.oauth2.credentials.Credentials.from_authorized_user_file") as mock_from_user, \
             patch("googleapiclient.discovery.build"):
             mock_creds = MagicMock()
@@ -134,6 +126,10 @@ class TestOAuthFallback:
             mock_from_user.return_value = mock_creds
 
             from google_sheets_auth import create_sheets_service
+            import google_sheets_auth
+            google_sheets_auth.TOKEN_FILE = str(token_file)
+            google_sheets_auth.CREDENTIALS_FILE = "/nonexistent/creds.json"
+
             service = create_sheets_service()
 
             mock_from_user.assert_called_once()
@@ -143,12 +139,7 @@ class TestOAuthFallback:
         token_file = tmp_path / "token.json"
         token_file.write_text("{}")
 
-        with patch.dict(os.environ, {
-            "GOOGLE_SERVICE_ACCOUNT_JSON_B64": "",
-            "GOOGLE_SERVICE_ACCOUNT_FILE": "",
-            "GOOGLE_TOKEN_FILE": str(token_file),
-            "GOOGLE_CREDENTIALS_FILE": "/nonexistent/creds.json",
-        }), \
+        with patch.dict(os.environ, {"GOOGLE_SERVICE_ACCOUNT_JSON_B64": ""}), \
             patch("google.oauth2.credentials.Credentials.from_authorized_user_file") as mock_from_user, \
             patch("googleapiclient.discovery.build"):
             mock_creds = MagicMock()
@@ -159,18 +150,21 @@ class TestOAuthFallback:
             mock_from_user.return_value = mock_creds
 
             from google_sheets_auth import create_sheets_service
+            import google_sheets_auth
+            google_sheets_auth.TOKEN_FILE = str(token_file)
+            google_sheets_auth.CREDENTIALS_FILE = "/nonexistent/creds.json"
+
             service = create_sheets_service()
 
             mock_creds.refresh.assert_called_once()
             assert service is not None
 
     def test_raises_when_no_credentials_at_all(self):
-        with patch.dict(os.environ, {
-            "GOOGLE_SERVICE_ACCOUNT_JSON_B64": "",
-            "GOOGLE_SERVICE_ACCOUNT_FILE": "",
-            "GOOGLE_TOKEN_FILE": "/nonexistent/token.json",
-            "GOOGLE_CREDENTIALS_FILE": "/nonexistent/creds.json",
-        }):
+        with patch.dict(os.environ, {"GOOGLE_SERVICE_ACCOUNT_JSON_B64": ""}):
             from google_sheets_auth import create_sheets_service
+            import google_sheets_auth
+            google_sheets_auth.TOKEN_FILE = "/nonexistent/token.json"
+            google_sheets_auth.CREDENTIALS_FILE = "/nonexistent/creds.json"
+
             with pytest.raises(FileNotFoundError, match="No credentials found"):
                 create_sheets_service()

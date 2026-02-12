@@ -30,9 +30,14 @@ uv sync
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/) and create a project (or pick an existing one)
 2. Enable the **Google Sheets API** (APIs & Services > Library > search "Google Sheets API" > Enable)
-3. Create credentials:
-   - **For local use:** Create an OAuth 2.0 Client ID (Desktop app), download the JSON, and save it as `credentials.json` in the project root
-   - **For Docker / headless:** Create a Service Account, download the JSON key, and share your spreadsheet with the service account email
+3. Create credentials — pick **one** method and save the JSON as `credentials.json` in the project root:
+
+| Method | Best for | What it is |
+|---|---|---|
+| **OAuth 2.0 Client ID** (Desktop app) | Local / personal use | Identifies your *app*; you'll sign in with your Google account once via `auth_setup.py`, which creates a `token.json` session that the server refreshes automatically |
+| **Service Account** | Docker / headless / CI | A machine identity that has direct API access — no browser sign-in, no `token.json` needed. Share your spreadsheet with the service account email after creating it |
+
+The server auto-detects which type of `credentials.json` you have.
 
 ### 3. Prepare your spreadsheet
 
@@ -59,13 +64,17 @@ Edit `.env` and set your spreadsheet ID (the long string in your spreadsheet's U
 GOOGLE_SPREADSHEET_ID="your-spreadsheet-id-here"
 ```
 
-### 5. Run
+### 5. Authenticate
+
+If you're using **OAuth** (Option A from step 2), generate a token before connecting to an MCP client:
 
 ```bash
-uv run python server.py
+uv run python auth_setup.py
 ```
 
-On first run, a browser window will open for Google OAuth. After authenticating, a `token.json` file is saved for future use.
+A browser window will open for Google OAuth. After authenticating, a `token.json` file is saved and the server can run headlessly from then on.
+
+> **Why a separate step?** MCP clients like Claude Desktop launch the server as a background process with no browser access. Running `auth_setup.py` once up front avoids this problem. If you're using a service account, skip this step.
 
 ### 6. Connect your MCP client
 
@@ -75,8 +84,11 @@ On first run, a browser window will open for Google OAuth. After authenticating,
 {
   "mcpServers": {
     "pfm": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/open-pfm", "python", "server.py"]
+      "command": "/path/to/open-pfm/.venv/bin/python",
+      "args": ["/path/to/open-pfm/server.py"],
+      "env": {
+        "GOOGLE_SPREADSHEET_ID": "your-spreadsheet-id-here"
+      }
     }
   }
 }
@@ -127,12 +139,11 @@ The included `Dockerfile` and `railway.toml` work out of the box with Railway. F
 |---|---|---|---|
 | `GOOGLE_SPREADSHEET_ID` | Yes | - | Your Google Spreadsheet ID (from the URL) |
 | `GOOGLE_SERVICE_ACCOUNT_JSON_B64` | No | `""` | Base64-encoded service account JSON (for cloud/Docker) |
-| `GOOGLE_SERVICE_ACCOUNT_FILE` | No | `""` | Path to service account key file (for local Docker) |
-| `GOOGLE_CREDENTIALS_FILE` | No | `credentials.json` | Path to OAuth client credentials (for local dev) |
-| `GOOGLE_TOKEN_FILE` | No | `token.json` | Path to cached OAuth token (for local dev) |
 | `MCP_TRANSPORT` | No | `stdio` | `stdio` for local, `sse` for remote/Docker |
 | `MCP_HOST` | No | `0.0.0.0` | Host to bind (remote mode) |
 | `MCP_PORT` | No | `8000` | Port to bind (remote mode) |
+
+For local auth, place your credentials file (OAuth client secrets **or** service account key) as `credentials.json` in the project root. No env var needed.
 
 ## Running tests
 
@@ -149,6 +160,7 @@ open-pfm/
 ├── models.py              # Pydantic data models
 ├── repository.py          # Data access layer (Google Sheets)
 ├── google_sheets_auth.py  # Authentication (OAuth / service account)
+├── auth_setup.py          # One-time OAuth token generator
 ├── tests/                 # Test suite
 ├── Dockerfile             # Container image
 ├── docker-compose.yml     # Local Docker setup
