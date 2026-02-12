@@ -4,6 +4,7 @@ FastMCP Server for Personal Finance Management
 Fetches transactions from Google Spreadsheets using FastMCP
 """
 
+import hmac
 import os
 from datetime import datetime
 from typing import Optional
@@ -36,9 +37,30 @@ from repository import (
 TRANSPORT = os.getenv('MCP_TRANSPORT', 'stdio')
 HOST = os.getenv('MCP_HOST', '0.0.0.0')
 PORT = int(os.getenv('MCP_PORT', '') or os.getenv('PORT', '8000'))
+MCP_AUTH_TOKEN = os.getenv('MCP_AUTH_TOKEN', '')
 # FastMCP 2.x deprecated SSE in favour of Streamable HTTP ("http").
 # Normalise the legacy "sse" value so existing deployments keep working.
 _TRANSPORT_ALIASES = {"sse": "http"}
+
+
+class _BearerAuthMiddleware:
+    """ASGI middleware that requires a valid Bearer token on every HTTP request."""
+
+    def __init__(self, app, token: str):
+        self.app = app
+        self.token = token
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers", []))
+            auth_value = headers.get(b"authorization", b"").decode()
+            if not hmac.compare_digest(auth_value, f"Bearer {self.token}"):
+                from starlette.responses import Response
+                response = Response("Unauthorized", status_code=401)
+                await response(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
 
 # Global repository instances
 _repository: TransactionRepository | None = None
@@ -454,6 +476,10 @@ async def fetch_flows(
 if __name__ == "__main__":
     resolved = _TRANSPORT_ALIASES.get(TRANSPORT, TRANSPORT)
     if resolved == "http":
-        app.run(transport="http", host=HOST, port=PORT)
+        middleware = []
+        if MCP_AUTH_TOKEN:
+            from starlette.middleware import Middleware
+            middleware.append(Middleware(_BearerAuthMiddleware, token=MCP_AUTH_TOKEN))
+        app.run(transport="http", host=HOST, port=PORT, middleware=middleware)
     else:
         app.run()

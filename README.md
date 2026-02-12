@@ -123,15 +123,24 @@ The server is available at `http://localhost:8000/sse`.
 ### Option B: Deploy to Railway (or any Docker host)
 
 1. Encode your service account key: `base64 -w0 /path/to/key.json` (on macOS: `base64 -i /path/to/key.json`)
-2. Set these environment variables on your host:
+2. Generate a bearer token to protect the deployment: `openssl rand -hex 32`
+3. Set these environment variables on your host:
 
 | Variable | Value |
 |---|---|
 | `GOOGLE_SPREADSHEET_ID` | Your spreadsheet ID |
 | `GOOGLE_SERVICE_ACCOUNT_JSON_B64` | The base64 string from step 1 |
 | `MCP_TRANSPORT` | `sse` |
+| `MCP_AUTH_TOKEN` | The token from step 2 |
 
 The included `Dockerfile` and `railway.toml` work out of the box with Railway. For other platforms, any Docker host that runs the Dockerfile will work.
+
+4. Connect via MCPPorter with your bearer token:
+
+```bash
+mcporter config add pfm https://your-host.up.railway.app/mcp/ \
+  --header "Authorization: Bearer YOUR_TOKEN"
+```
 
 ## Environment variables
 
@@ -142,6 +151,7 @@ The included `Dockerfile` and `railway.toml` work out of the box with Railway. F
 | `MCP_TRANSPORT` | No | `stdio` | `stdio` for local, `sse` for remote/Docker |
 | `MCP_HOST` | No | `0.0.0.0` | Host to bind (remote mode) |
 | `MCP_PORT` | No | `8000` | Port to bind (remote mode) |
+| `MCP_AUTH_TOKEN` | No | `""` | Bearer token required for HTTP transport requests (recommended for public deployments) |
 
 For local auth, place your credentials file (OAuth client secrets **or** service account key) as `credentials.json` in the project root. No env var needed.
 
