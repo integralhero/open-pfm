@@ -59,13 +59,17 @@ Edit `.env` and set your spreadsheet ID (the long string in your spreadsheet's U
 GOOGLE_SPREADSHEET_ID="your-spreadsheet-id-here"
 ```
 
-### 5. Run
+### 5. Authenticate
+
+If you're using **OAuth** (Option A from step 2), generate a token before connecting to an MCP client:
 
 ```bash
-uv run python server.py
+uv run python auth_setup.py
 ```
 
-On first run, a browser window will open for Google OAuth. After authenticating, a `token.json` file is saved for future use.
+A browser window will open for Google OAuth. After authenticating, a `token.json` file is saved and the server can run headlessly from then on.
+
+> **Why a separate step?** MCP clients like Claude Desktop launch the server as a background process with no browser access. Running `auth_setup.py` once up front avoids this problem. If you're using a service account, skip this step.
 
 ### 6. Connect your MCP client
 
@@ -75,8 +79,11 @@ On first run, a browser window will open for Google OAuth. After authenticating,
 {
   "mcpServers": {
     "pfm": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/open-pfm", "python", "server.py"]
+      "command": "/path/to/open-pfm/.venv/bin/python",
+      "args": ["/path/to/open-pfm/server.py"],
+      "env": {
+        "GOOGLE_SPREADSHEET_ID": "your-spreadsheet-id-here"
+      }
     }
   }
 }
@@ -149,6 +156,7 @@ open-pfm/
 ├── models.py              # Pydantic data models
 ├── repository.py          # Data access layer (Google Sheets)
 ├── google_sheets_auth.py  # Authentication (OAuth / service account)
+├── auth_setup.py          # One-time OAuth token generator
 ├── tests/                 # Test suite
 ├── Dockerfile             # Container image
 ├── docker-compose.yml     # Local Docker setup
