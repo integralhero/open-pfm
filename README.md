@@ -41,7 +41,7 @@ The server auto-detects which type of `credentials.json` you have.
 
 ### 3. Prepare your spreadsheet
 
-Create a Google Spreadsheet with a sheet per year (e.g. `2024`, `2025`). Each sheet should have **no header row** and the following columns:
+Start from the **[Google Sheet template](https://docs.google.com/spreadsheets/d/15eHQpcgdd-zRZAA3O9FjlprtHsyU_bEj4nDNarHxUfY/edit?gid=696012563#gid=696012563)** (File > Make a copy), or create your own Google Spreadsheet with a sheet per year (e.g. `2024`, `2025`). Each sheet should have **no header row** and the following columns:
 
 | A (Date) | B (Name) | C (Amount) | D (Description) | E (Category) |
 |-----------|----------|------------|------------------|--------------|
