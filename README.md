@@ -30,9 +30,14 @@ uv sync
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/) and create a project (or pick an existing one)
 2. Enable the **Google Sheets API** (APIs & Services > Library > search "Google Sheets API" > Enable)
-3. Create credentials:
-   - **For local use:** Create an OAuth 2.0 Client ID (Desktop app), download the JSON, and save it as `credentials.json` in the project root
-   - **For Docker / headless:** Create a Service Account, download the JSON key, and share your spreadsheet with the service account email
+3. Create credentials — pick **one** method and save the JSON as `credentials.json` in the project root:
+
+| Method | Best for | What it is |
+|---|---|---|
+| **OAuth 2.0 Client ID** (Desktop app) | Local / personal use | Identifies your *app*; you'll sign in with your Google account once via `auth_setup.py`, which creates a `token.json` session that the server refreshes automatically |
+| **Service Account** | Docker / headless / CI | A machine identity that has direct API access — no browser sign-in, no `token.json` needed. Share your spreadsheet with the service account email after creating it |
+
+The server auto-detects which type of `credentials.json` you have.
 
 ### 3. Prepare your spreadsheet
 
